@@ -6,9 +6,9 @@ import { highlighter } from "./highlighter.js";
 import { logger } from "./logger.js";
 import { prompts } from "./prompts.js";
 
-const CONFIG_DIRECTORY = join(homedir(), ".react-doctor");
+const CONFIG_DIRECTORY = join(homedir(), ".code-doctor");
 const CONFIG_FILE = join(CONFIG_DIRECTORY, "config.json");
-const SKILL_REPO = "millionco/react-doctor";
+const SKILL_REPO = "rrb115/code-doctor";
 
 interface UserConfig {
   skillPromptDismissed?: boolean;
@@ -29,7 +29,7 @@ const writeConfig = (config: UserConfig): void => {
       mkdirSync(CONFIG_DIRECTORY, { recursive: true });
     }
     writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
-  } catch {}
+  } catch { }
 };
 
 const installSkill = (): void => {

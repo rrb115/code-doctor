@@ -1,8 +1,10 @@
-# react-doctor
+# code-doctor
 
 ## 0.0.18
 
-### Patch Changes
+- Full refactor: removed all React-specific rules.
+- Renamed package to `code-doctor`.
+- Added LLM optimization rules.Changes
 
 - fix
 

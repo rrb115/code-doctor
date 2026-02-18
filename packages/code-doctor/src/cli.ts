@@ -127,7 +127,7 @@ const DEEPLINK_FIX_PROMPT =
   "Run `npx -y code-doctor@latest .` to diagnose issues, then fix all reported issues one by one. After applying fixes, run it again to verify the results improved.";
 const CLIPBOARD_FIX_PROMPT =
   "Fix all issues reported in the code-doctor diagnostics below, one by one. After applying fixes, run `npx -y code-doctor@latest .` again to verify the results improved.";
-const REACT_DOCTOR_OUTPUT_LABEL = "code-doctor output";
+const CODE_DOCTOR_OUTPUT_LABEL = "code-doctor output";
 const SCAN_SUMMARY_SEPARATOR = "─".repeat(SEPARATOR_LENGTH_CHARS);
 
 const isAmiInstalled = (): boolean => {
@@ -214,20 +214,20 @@ const openAmiToFix = (directory: string): void => {
   }
 };
 
-const buildPromptWithOutput = (reactDoctorOutput: string): string => {
-  const summaryStartIndex = reactDoctorOutput.indexOf(SCAN_SUMMARY_SEPARATOR);
+const buildPromptWithOutput = (codeDoctorOutput: string): string => {
+  const summaryStartIndex = codeDoctorOutput.indexOf(SCAN_SUMMARY_SEPARATOR);
   const diagnosticsOutput =
     summaryStartIndex === -1
-      ? reactDoctorOutput
-      : reactDoctorOutput.slice(0, summaryStartIndex).trimEnd();
+      ? codeDoctorOutput
+      : codeDoctorOutput.slice(0, summaryStartIndex).trimEnd();
   const normalizedReactDoctorOutput = diagnosticsOutput.trim();
   const outputContent =
     normalizedReactDoctorOutput.length > 0 ? normalizedReactDoctorOutput : "No output captured.";
-  return `${CLIPBOARD_FIX_PROMPT}\n\n${REACT_DOCTOR_OUTPUT_LABEL}:\n\`\`\`\n${outputContent}\n\`\`\``;
+  return `${CLIPBOARD_FIX_PROMPT}\n\n${CODE_DOCTOR_OUTPUT_LABEL}:\n\`\`\`\n${outputContent}\n\`\`\``;
 };
 
-const copyPromptToClipboard = (reactDoctorOutput: string, shouldLogResult: boolean): void => {
-  const promptWithOutput = buildPromptWithOutput(reactDoctorOutput);
+const copyPromptToClipboard = (codeDoctorOutput: string, shouldLogResult: boolean): void => {
+  const promptWithOutput = buildPromptWithOutput(codeDoctorOutput);
   const didCopyPromptToClipboard = copyToClipboard(promptWithOutput);
 
   if (!shouldLogResult) {

@@ -1,18 +1,18 @@
 {
-  "name": "react-doctor",
+  "name": "code-doctor",
   "private": true,
-  "homepage": "https://github.com/aidenybai/react-doctor#readme",
+  "homepage": "https://github.com/rrb115/code-doctor#readme",
   "bugs": {
-    "url": "https://github.com/aidenybai/react-doctor/issues"
+    "url": "https://github.com/rrb115/code-doctor/issues"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/aidenybai/react-doctor.git"
+    "url": "https://github.com/rrb115/code-doctor.git"
   },
   "scripts": {
-    "dev": "pnpm --filter react-doctor run dev",
-    "build": "pnpm --filter react-doctor run build",
-    "test": "pnpm --filter react-doctor run test",
+    "dev": "pnpm --filter code-doctor run dev",
+    "build": "pnpm --filter code-doctor run build",
+    "test": "pnpm --filter code-doctor run test",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "format": "oxfmt",

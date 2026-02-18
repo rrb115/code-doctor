@@ -6,9 +6,9 @@ const PERFECT_SCORE = 100;
 const SCORE_GOOD_THRESHOLD = 75;
 const SCORE_OK_THRESHOLD = 50;
 const SCORE_BAR_WIDTH = 20;
-const COMMAND = "npx -y react-doctor@latest .";
+const COMMAND = "npx -y code-doctor@latest .";
 const CONTRIBUTE_URL =
-  "https://github.com/millionco/react-doctor/edit/main/packages/website/src/app/leaderboard/leaderboard-entries.ts";
+  "https://github.com/millionco/code-doctor/edit/main/packages/website/src/app/leaderboard/leaderboard-entries.ts";
 
 const getScoreColorClass = (score: number): string => {
   if (score >= SCORE_GOOD_THRESHOLD) return "text-green-400";
@@ -64,8 +64,8 @@ const LeaderboardRow = ({ entry, rank }: { entry: ResolvedLeaderboardEntry; rank
 };
 
 export const metadata: Metadata = {
-  title: "Leaderboard - React Doctor",
-  description: "Scores for popular open-source React projects, diagnosed by React Doctor.",
+  title: "Leaderboard - Code Doctor",
+  description: "Scores for popular open-source React projects, diagnosed by Code Doctor.",
 };
 
 const LeaderboardPage = () => {
@@ -80,8 +80,8 @@ const LeaderboardPage = () => {
           href="/"
           className="inline-flex items-center gap-2 text-neutral-500 transition-colors hover:text-neutral-300"
         >
-          <img src="/favicon.svg" alt="React Doctor" width={20} height={20} />
-          <span>react-doctor</span>
+          <img src="/favicon.svg" alt="Code Doctor" width={20} height={20} />
+          <span>code-doctor</span>
         </Link>
       </div>
 

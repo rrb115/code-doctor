@@ -24,6 +24,7 @@ const openaiClient: OpenAiClient = {
   },
 };
 
+// 1. Static prompt
 const normalizeFullNameWithLlm = async () =>
   openaiClient.chat.completions.create({
     model: "gpt-4o-mini",
@@ -40,6 +41,7 @@ const normalizeFullNameWithLlm = async () =>
     ],
   });
 
+// 2. Deterministic task (Classification loop)
 const classifySupportTicketWithLlm = async (ticketText: string) =>
   openaiClient.chat.completions.create({
     model: "gpt-4o-mini",
@@ -56,4 +58,26 @@ const classifySupportTicketWithLlm = async (ticketText: string) =>
     ],
   });
 
-export { classifySupportTicketWithLlm, normalizeFullNameWithLlm };
+// 3. Loop call
+const processSupportTickets = async (tickets: string[]) => {
+  // Loop
+  for (const ticket of tickets) {
+    await classifySupportTicketWithLlm(ticket);
+  }
+  // Map
+  await Promise.all(tickets.map((ticket) => classifySupportTicketWithLlm(ticket)));
+};
+
+// 4. Sequential call
+const processSequential = async (ticket: string) => {
+  const result1 = await classifySupportTicketWithLlm(ticket);
+  const result2 = await normalizeFullNameWithLlm();
+  return { result1, result2 };
+};
+
+export {
+  classifySupportTicketWithLlm,
+  normalizeFullNameWithLlm,
+  processSupportTickets,
+  processSequential,
+};

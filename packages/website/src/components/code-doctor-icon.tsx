@@ -9,10 +9,10 @@ interface ReactDoctorIconProps {
 const ReactDoctorIcon = ({
   sizePx = DEFAULT_ICON_SIZE_PX,
   className,
-  alt = "React Doctor icon",
+  alt = "Code Doctor icon",
 }: ReactDoctorIconProps) => (
   <img
-    src="/react-doctor-icon.svg"
+    src="/code-doctor-icon.svg"
     width={sizePx}
     height={sizePx}
     alt={alt}

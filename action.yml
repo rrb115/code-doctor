@@ -39,12 +39,15 @@ runs:
         FLAGS=""
         if [ "$INPUT_VERBOSE" = "true" ]; then FLAGS="$FLAGS --verbose"; fi
         if [ -n "$INPUT_PROJECT" ]; then FLAGS="$FLAGS --project $INPUT_PROJECT"; fi
-        npx -y react-doctor@latest "$INPUT_DIRECTORY" $FLAGS
+        npx -y code-doctor@latest "$INPUT_DIRECTORY" $FLAGS
 
     - id: score
       shell: bash
       env:
         INPUT_DIRECTORY: ${{ inputs.directory }}
       run: |
-        SCORE=$(npx -y react-doctor@latest "$INPUT_DIRECTORY" --score 2>/dev/null || echo "")
-        echo "score=$SCORE" >> "$GITHUB_OUTPUT"
+        npx -y code-doctor@latest "$INPUT_DIRECTORY" $FLAGS
+        if [ "$INPUT_Score" = "true" ]; then
+        SCORE=$(npx -y code-doctor@latest "$INPUT_DIRECTORY" --score 2>/dev/null || echo "")
+        echo "score=$SCORE" >> $GITHUB_OUTPUT
+        fi

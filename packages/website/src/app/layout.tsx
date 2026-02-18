@@ -10,17 +10,17 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 const SITE_URL = "https://www.react.doctor";
-const TWITTER_IMAGE_PATH = "/react-doctor-og-banner.svg";
+const TWITTER_IMAGE_PATH = "/code-doctor-og-banner.svg";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: "React Doctor",
+  title: "Code Doctor",
   description: "Let coding agents diagnose and fix your React code.",
   twitter: {
     card: "summary_large_image",
     images: [TWITTER_IMAGE_PATH],
   },
-  icons: { icon: "/react-doctor-icon.svg" },
+  icons: { icon: "/code-doctor-icon.svg" },
 };
 
 export default function RootLayout({

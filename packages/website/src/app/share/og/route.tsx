@@ -7,7 +7,7 @@ const IMAGE_WIDTH_PX = 1200;
 const IMAGE_HEIGHT_PX = 630;
 const OG_BRAND_MARK_WIDTH_PX = 244;
 const OG_BRAND_MARK_HEIGHT_PX = 82;
-const OG_BRAND_MARK_PATH = "/react-doctor-og-banner.svg";
+const OG_BRAND_MARK_PATH = "/code-doctor-og-banner.svg";
 
 const getScoreLabel = (score: number): string => {
   if (score >= SCORE_GOOD_THRESHOLD) return "Great";

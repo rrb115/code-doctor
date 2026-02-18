@@ -1,17 +1,22 @@
 ---
-name: react-doctor
-description: Diagnose and fix React codebase health issues. Use when reviewing React code, fixing performance problems, auditing security, or improving code quality.
+name: code-doctor
+description: Detect and eliminate unnecessary LLM calls in JS/TS usage
+group: AI Engineering
 version: 1.0.0
 ---
 
-# React Doctor
+# code-doctor
 
-Scans your React codebase for security, performance, correctness, and architecture issues. Outputs a 0-100 score with actionable diagnostics.
+A CLI tool to detect and eliminate unnecessary LLM calls in JavaScript/TypeScript codebases.
 
 ## Usage
 
 ```bash
-npx -y react-doctor@latest . --verbose
+# Run on current directory
+npx -y code-doctor@latest .
+
+# Run with verbose output
+npx -y code-doctor@latest . --verbose
 ```
 
 ## Workflow

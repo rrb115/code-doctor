@@ -6,6 +6,9 @@ import {
   LLM_INVOCATION_METHOD_NAMES,
   LLM_PROVIDER_SEGMENTS,
   LLM_TEXT_FIELD_NAMES,
+  LLM_ITERATION_METHOD_NAMES,
+  LLM_SEQUENTIAL_AWAIT_THRESHOLD,
+  LOOP_TYPES
 } from "../constants.js";
 import type { EsTreeNode, Rule } from "../types.js";
 
@@ -123,7 +126,7 @@ const isLikelyLlmCall = (callExpressionNode: EsTreeNode): boolean => {
 
   return Boolean(
     (hasProviderSegment(normalizedSegments) && LLM_INVOCATION_METHOD_NAMES.has(lastSegment)) ||
-      (hasProviderSegment(normalizedSegments) && hasLlmHintSegment(normalizedSegments)),
+    (hasProviderSegment(normalizedSegments) && hasLlmHintSegment(normalizedSegments)),
   );
 };
 
@@ -342,5 +345,76 @@ export const llmDeterministicTask: Rule = {
           "Prompt appears to request deterministic transformation/classification — replace this LLM call with string, regex, or switch-based logic to reduce latency and cost",
       });
     },
+  }),
+};
+
+export const llmLoopCall: Rule = {
+  create: (context) => ({
+    CallExpression(node: EsTreeNode) {
+      if (!isLikelyLlmCall(node)) {
+        return;
+      }
+
+      let ancestor = (node as any).parent;
+      while (ancestor) {
+        if (LOOP_TYPES.includes(ancestor.type)) {
+          context.report({
+            node,
+            message:
+              "LLM call is executed per-item in a loop/iteration callback — use deterministic parsing, pre-filtering, or batch requests to reduce latency",
+          });
+          return;
+        }
+
+        if (ancestor.type === "CallExpression") {
+          const calleeSegments = getCalleeSegments(ancestor);
+          const lastSegment = calleeSegments.at(-1);
+          if (lastSegment && LLM_ITERATION_METHOD_NAMES.has(lastSegment)) {
+            context.report({
+              node,
+              message:
+                "LLM call is executed per-item in a loop/iteration callback — use deterministic parsing, pre-filtering, or batch requests to reduce latency",
+            });
+            return;
+          }
+        }
+
+        ancestor = ancestor.parent;
+      }
+    },
+  }),
+};
+
+export const llmSequentialCall: Rule = {
+  create: (context) => ({
+    //@ts-ignore
+    BlockStatement(node: EsTreeNode) {
+      // Find all AwaitExpressions in this block
+      const awaitedLlmCalls: EsTreeNode[] = [];
+      for (const statement of node.body || []) {
+        let subNode: EsTreeNode | null = null;
+        if (statement.type === "ExpressionStatement") {
+          subNode = statement.expression;
+        } else if (statement.type === "VariableDeclaration") {
+          subNode = statement.declarations?.[0]?.init;
+        } else if (statement.type === "ReturnStatement") {
+          subNode = statement.argument;
+        }
+
+        if (subNode && subNode.type === "AwaitExpression") {
+          const argument = subNode.argument;
+          if (argument && argument.type === "CallExpression" && isLikelyLlmCall(argument)) {
+            awaitedLlmCalls.push(argument);
+          }
+        }
+      }
+
+      if (awaitedLlmCalls.length >= LLM_SEQUENTIAL_AWAIT_THRESHOLD) {
+        context.report({
+          node: awaitedLlmCalls[0],
+          message: "Multiple sequential awaited LLM calls found — consolidate deterministic work and parallelize independent model calls to lower latency"
+        });
+      }
+    }
   }),
 };
