@@ -3,12 +3,9 @@ import {
   LLM_CHAIN_HINT_SEGMENTS,
   LLM_DETERMINISTIC_PROMPT_PATTERNS,
   LLM_DYNAMIC_FIELD_NAMES,
-  LLM_ITERATION_METHOD_NAMES,
   LLM_INVOCATION_METHOD_NAMES,
   LLM_PROVIDER_SEGMENTS,
-  LLM_SEQUENTIAL_AWAIT_THRESHOLD,
   LLM_TEXT_FIELD_NAMES,
-  LOOP_TYPES,
 } from "../constants.js";
 import type { EsTreeNode, Rule } from "../types.js";
 
@@ -24,17 +21,6 @@ const getPropertyKeyName = (propertyNode: EsTreeNode): string | null => {
   }
   if (propertyNode.key?.type === "Literal" && typeof propertyNode.key.value === "string") {
     return propertyNode.key.value;
-  }
-  return null;
-};
-
-const getMemberPropertyName = (memberExpressionNode: EsTreeNode): string | null => {
-  const propertyNode = memberExpressionNode.property;
-  if (!memberExpressionNode.computed && propertyNode?.type === "Identifier") {
-    return propertyNode.name;
-  }
-  if (memberExpressionNode.computed && propertyNode?.type === "Literal") {
-    return typeof propertyNode.value === "string" ? propertyNode.value : null;
   }
   return null;
 };
@@ -300,72 +286,6 @@ const buildPromptText = (promptNode: EsTreeNode): string => {
 const hasDeterministicPromptText = (promptText: string): boolean =>
   LLM_DETERMINISTIC_PROMPT_PATTERNS.some((promptPattern) => promptPattern.test(promptText));
 
-const isFunctionExpressionNode = (node: EsTreeNode): boolean =>
-  node.type === "ArrowFunctionExpression" || node.type === "FunctionExpression";
-
-const isInsideLoop = (node: EsTreeNode): boolean => {
-  let currentNode: EsTreeNode | null = node.parent;
-
-  while (currentNode) {
-    if (LOOP_TYPES.includes(currentNode.type)) {
-      return true;
-    }
-    currentNode = currentNode.parent;
-  }
-
-  return false;
-};
-
-const isInsideIterationCallback = (node: EsTreeNode): boolean => {
-  let currentNode: EsTreeNode | null = node.parent;
-
-  while (currentNode) {
-    if (isFunctionExpressionNode(currentNode) && currentNode.parent?.type === "CallExpression") {
-      const parentCallExpression = currentNode.parent;
-      const unwrappedCallee = unwrapChainExpression(parentCallExpression.callee);
-
-      if (unwrappedCallee.type === "MemberExpression") {
-        const methodName = getMemberPropertyName(unwrappedCallee);
-        if (methodName && LLM_ITERATION_METHOD_NAMES.has(methodName)) {
-          return true;
-        }
-      }
-    }
-
-    currentNode = currentNode.parent;
-  }
-
-  return false;
-};
-
-const extractAwaitExpression = (statementNode: EsTreeNode): EsTreeNode | null => {
-  if (
-    statementNode.type === "VariableDeclaration" &&
-    statementNode.declarations?.length === 1 &&
-    statementNode.declarations[0].init?.type === "AwaitExpression"
-  ) {
-    return statementNode.declarations[0].init;
-  }
-
-  if (
-    statementNode.type === "ExpressionStatement" &&
-    statementNode.expression?.type === "AwaitExpression"
-  ) {
-    return statementNode.expression;
-  }
-
-  return null;
-};
-
-const isAwaitingLlmCall = (awaitExpressionNode: EsTreeNode): boolean => {
-  const unwrappedAwaitArgument = unwrapChainExpression(awaitExpressionNode.argument);
-  if (unwrappedAwaitArgument.type !== "CallExpression") {
-    return false;
-  }
-
-  return isLikelyLlmCall(unwrappedAwaitArgument);
-};
-
 export const llmStaticPromptCall: Rule = {
   create: (context) => ({
     CallExpression(node: EsTreeNode) {
@@ -421,61 +341,6 @@ export const llmDeterministicTask: Rule = {
         message:
           "Prompt appears to request deterministic transformation/classification — replace this LLM call with string, regex, or switch-based logic to reduce latency and cost",
       });
-    },
-  }),
-};
-
-export const llmLoopCall: Rule = {
-  create: (context) => ({
-    CallExpression(node: EsTreeNode) {
-      if (!isLikelyLlmCall(node)) {
-        return;
-      }
-
-      if (!isInsideLoop(node) && !isInsideIterationCallback(node)) {
-        return;
-      }
-
-      context.report({
-        node,
-        message:
-          "LLM call is executed per-item in a loop/iteration callback — use deterministic parsing, pre-filtering, or batch requests to reduce latency",
-      });
-    },
-  }),
-};
-
-export const llmSequentialCall: Rule = {
-  create: (context) => ({
-    BlockStatement(node: EsTreeNode) {
-      const consecutiveLlmAwaitStatements: EsTreeNode[] = [];
-
-      const flushConsecutiveAwaits = (): void => {
-        if (consecutiveLlmAwaitStatements.length < LLM_SEQUENTIAL_AWAIT_THRESHOLD) {
-          consecutiveLlmAwaitStatements.length = 0;
-          return;
-        }
-
-        context.report({
-          node: consecutiveLlmAwaitStatements[0],
-          message:
-            "Multiple sequential awaited LLM calls found — consolidate deterministic work and parallelize independent model calls to lower latency",
-        });
-        consecutiveLlmAwaitStatements.length = 0;
-      };
-
-      for (const statementNode of node.body ?? []) {
-        const awaitExpressionNode = extractAwaitExpression(statementNode);
-
-        if (awaitExpressionNode && isAwaitingLlmCall(awaitExpressionNode)) {
-          consecutiveLlmAwaitStatements.push(statementNode);
-          continue;
-        }
-
-        flushConsecutiveAwaits();
-      }
-
-      flushConsecutiveAwaits();
     },
   }),
 };

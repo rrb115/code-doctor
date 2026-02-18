@@ -1,16 +1,8 @@
-# code-doctor
+# code-doctor (llminate)
 
 > Detect and eliminate unnecessary LLM calls in any JavaScript/TypeScript codebase — replace them with deterministic local logic to cut latency and cost.
 
 Forked from [react-doctor](https://github.com/millionco/react-doctor) and repurposed as a focused LLM optimization tool.
-
----
-
-## Why code-doctor?
-
-Every LLM call adds 200–2000 ms of network latency and real API cost. Many of those calls don't need to be LLM calls at all — they're asking a model to do something a few lines of deterministic code could do instantly.
-
-`code-doctor` scans your codebase and flags these patterns so you can replace them.
 
 ---
 

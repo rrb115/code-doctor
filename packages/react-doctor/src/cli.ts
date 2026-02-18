@@ -11,7 +11,7 @@ import { logger, startLoggerCapture, stopLoggerCapture } from "./utils/logger.js
 import { scan } from "./scan.js";
 import { selectProjects } from "./utils/select-projects.js";
 import { prompts } from "./utils/prompts.js";
-import { maybePromptSkillInstall } from "./utils/skill-prompt.js";
+// removed maybePromptSkillInstall
 import { maybeInstallGlobally } from "./utils/global-install.js";
 import { copyToClipboard } from "./utils/copy-to-clipboard.js";
 
@@ -99,7 +99,7 @@ const program = new Command()
       }
 
       if (!isScoreOnly && !flags.prompt) {
-        await maybePromptSkillInstall(shouldSkipPrompts);
+        // await maybePromptSkillInstall(shouldSkipPrompts);
         if (!shouldSkipPrompts && !flags.fix) {
           await maybePromptAmiFix(resolvedDirectory);
         }
