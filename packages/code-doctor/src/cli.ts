@@ -5,6 +5,7 @@ import path from "node:path";
 import { Command } from "commander";
 import { SEPARATOR_LENGTH_CHARS } from "./constants.js";
 import type { ScanOptions } from "./types.js";
+import { cloneRepo } from "./utils/clone-repo.js";
 import { handleError } from "./utils/handle-error.js";
 import { highlighter } from "./utils/highlighter.js";
 import { logger, startLoggerCapture, stopLoggerCapture } from "./utils/logger.js";
@@ -53,7 +54,8 @@ const program = new Command()
     }
 
     try {
-      const resolvedDirectory = path.resolve(directory);
+      const isUrl = /^https?:\/\/|^git@/.test(directory);
+      let resolvedDirectory = isUrl ? cloneRepo(directory) : path.resolve(directory);
 
       if (!isScoreOnly) {
         logger.log(`code-doctor v${VERSION}`);

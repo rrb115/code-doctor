@@ -8,11 +8,14 @@ Forked from [react-doctor](https://github.com/millionco/react-doctor) and repurp
 
 ## Installation
 
-Run directly with npx (no install required):
-
-```bash
+# Run on current directory
 npx -y code-doctor@latest .
-```
+
+# Run on a GitHub repository
+npx -y code-doctor@latest https://github.com/owner/repo
+
+# Run with verbose output
+npx -y code-doctor@latest . --verbose
 
 Or install globally:
 
