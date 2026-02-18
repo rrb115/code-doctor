@@ -15,12 +15,12 @@ vi.mock("ora", () => ({
     stop: function () {
       return this;
     },
-    succeed: () => {},
-    fail: () => {},
+    succeed: () => { },
+    fail: () => { },
   }),
 }));
 
-const noReactTempDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "react-doctor-test-"));
+const noReactTempDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "code-doctor-test-"));
 fs.writeFileSync(
   path.join(noReactTempDirectory, "package.json"),
   JSON.stringify({ name: "no-react", dependencies: {} }),
@@ -32,34 +32,38 @@ afterAll(() => {
 
 describe("scan", () => {
   it("completes without throwing on a valid React project", async () => {
-    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => { });
     try {
       await scan(path.join(FIXTURES_DIRECTORY, "basic-react"), {
         lint: true,
         deadCode: false,
+        verbose: false,
+        scoreOnly: false,
       });
     } finally {
       consoleSpy.mockRestore();
     }
   });
 
-  it("throws when React dependency is missing", async () => {
-    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+  it("scans successfully when React dependency is missing", async () => {
+    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => { });
     try {
-      await expect(scan(noReactTempDirectory, { lint: true, deadCode: false })).rejects.toThrow(
-        "No React dependency found",
-      );
+      await expect(
+        scan(noReactTempDirectory, { lint: true, deadCode: false, verbose: false, scoreOnly: false }),
+      ).resolves.toBe(undefined);
     } finally {
       consoleSpy.mockRestore();
     }
   });
 
   it("skips lint when option is disabled", async () => {
-    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => { });
     try {
       await scan(path.join(FIXTURES_DIRECTORY, "basic-react"), {
         lint: false,
         deadCode: false,
+        verbose: false,
+        scoreOnly: false,
       });
     } finally {
       consoleSpy.mockRestore();
@@ -67,12 +71,14 @@ describe("scan", () => {
   });
 
   it("runs lint and dead code in parallel when both enabled", async () => {
-    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => { });
     try {
       const startTime = performance.now();
       await scan(path.join(FIXTURES_DIRECTORY, "basic-react"), {
         lint: true,
         deadCode: true,
+        verbose: false,
+        scoreOnly: false,
       });
       const elapsedMilliseconds = performance.now() - startTime;
 

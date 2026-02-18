@@ -1,6 +1,6 @@
 import path from "node:path";
 import type { WorkspacePackage } from "../types.js";
-import { discoverReactSubprojects, listWorkspacePackages } from "./discover-project.js";
+import { discoverSubprojects, listWorkspacePackages } from "./discover-project.js";
 import { highlighter } from "./highlighter.js";
 import { logger } from "./logger.js";
 import { prompts } from "./prompts.js";
@@ -12,7 +12,7 @@ export const selectProjects = async (
 ): Promise<string[]> => {
   let packages = listWorkspacePackages(rootDirectory);
   if (packages.length === 0) {
-    packages = discoverReactSubprojects(rootDirectory);
+    packages = discoverSubprojects(rootDirectory);
   }
 
   if (packages.length === 0) return [rootDirectory];

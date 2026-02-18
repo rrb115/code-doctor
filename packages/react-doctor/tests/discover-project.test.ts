@@ -35,7 +35,7 @@ describe("formatFrameworkName", () => {
     expect(formatFrameworkName("gatsby")).toBe("Gatsby");
   });
 
-  it("formats unknown framework as React", () => {
-    expect(formatFrameworkName("unknown")).toBe("React");
+  it("formats unknown framework as Generic", () => {
+    expect(formatFrameworkName("unknown")).toBe("Generic");
   });
 });

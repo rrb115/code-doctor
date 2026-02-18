@@ -32,8 +32,8 @@ process.on("SIGINT", () => process.exit(0));
 process.on("SIGTERM", () => process.exit(0));
 
 const program = new Command()
-  .name("react-doctor")
-  .description("Diagnose React codebase health")
+  .name("code-doctor")
+  .description("Detect and eliminate unnecessary LLM calls in any JS/TS codebase")
   .version(VERSION, "-v, --version", "display the version number")
   .argument("[directory]", "project directory to scan", ".")
   .option("--no-lint", "skip linting")
@@ -56,7 +56,7 @@ const program = new Command()
       const resolvedDirectory = path.resolve(directory);
 
       if (!isScoreOnly) {
-        logger.log(`react-doctor v${VERSION}`);
+        logger.log(`code-doctor v${VERSION}`);
         logger.break();
       }
 
@@ -117,17 +117,17 @@ const program = new Command()
     "after",
     `
 ${highlighter.dim("Learn more:")}
-  ${highlighter.info("https://github.com/millionco/react-doctor")}
+  ${highlighter.info("https://github.com/rrb115/code-doctor")}
 `,
   );
 
 const AMI_INSTALL_URL = "https://ami.dev/install.sh";
 const AMI_RELEASES_URL = "https://github.com/millionco/ami-releases/releases";
 const DEEPLINK_FIX_PROMPT =
-  "Run `npx -y react-doctor@latest .` to diagnose issues, then fix all reported issues one by one. After applying fixes, run it again to verify the results improved.";
+  "Run `npx -y code-doctor@latest .` to diagnose issues, then fix all reported issues one by one. After applying fixes, run it again to verify the results improved.";
 const CLIPBOARD_FIX_PROMPT =
-  "Fix all issues reported in the react-doctor diagnostics below, one by one. After applying fixes, run `npx -y react-doctor@latest .` again to verify the results improved.";
-const REACT_DOCTOR_OUTPUT_LABEL = "react-doctor output";
+  "Fix all issues reported in the code-doctor diagnostics below, one by one. After applying fixes, run `npx -y code-doctor@latest .` again to verify the results improved.";
+const REACT_DOCTOR_OUTPUT_LABEL = "code-doctor output";
 const SCAN_SUMMARY_SEPARATOR = "─".repeat(SEPARATOR_LENGTH_CHARS);
 
 const isAmiInstalled = (): boolean => {
@@ -202,11 +202,11 @@ const openAmiToFix = (directory: string): void => {
     return;
   }
 
-  logger.log("Opening Ami to fix react-doctor issues...");
+  logger.log("Opening Ami to fix code-doctor issues...");
 
   try {
     openUrl(deeplink);
-    logger.success("Opened Ami with react-doctor fix prompt.");
+    logger.success("Opened Ami with code-doctor fix prompt.");
   } catch {
     logger.break();
     logger.dim("Could not open Ami automatically. Open this URL manually:");
@@ -279,7 +279,7 @@ const fixAction = (directory: string) => {
 };
 
 const fixCommand = new Command("fix")
-  .description("Open Ami to auto-fix react-doctor issues")
+  .description("Open Ami to auto-fix code-doctor issues")
   .argument("[directory]", "project directory", ".")
   .action(fixAction);
 

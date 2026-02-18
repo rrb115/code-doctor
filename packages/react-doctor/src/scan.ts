@@ -20,7 +20,6 @@ import { discoverProject, formatFrameworkName } from "./utils/discover-project.j
 import { groupBy } from "./utils/group-by.js";
 import { highlighter } from "./utils/highlighter.js";
 import { logger } from "./utils/logger.js";
-import { checkReducedMotion } from "./utils/check-reduced-motion.js";
 import { runKnip } from "./utils/run-knip.js";
 import { runOxlint } from "./utils/run-oxlint.js";
 import { spinner } from "./utils/spinner.js";
@@ -133,7 +132,7 @@ const formatRuleSummary = (ruleKey: string, ruleDiagnostics: Diagnostic[]): stri
 };
 
 const writeDiagnosticsDirectory = (diagnostics: Diagnostic[]): string => {
-  const outputDirectory = join(tmpdir(), `react-doctor-${randomUUID()}`);
+  const outputDirectory = join(tmpdir(), `code-doctor-${randomUUID()}`);
   mkdirSync(outputDirectory);
 
   const ruleGroups = groupBy(
@@ -232,7 +231,7 @@ const printBranding = (score?: number): void => {
     logger.log(colorize(`  │ ${mouth} │`));
     logger.log(colorize("  └─────┘"));
   }
-  logger.log(`  React Doctor ${highlighter.dim("(www.react.doctor)")}`);
+  logger.log(`  Code Doctor ${highlighter.dim("(github.com/rrb115/code-doctor)")}`);
   logger.break();
 };
 
@@ -301,8 +300,8 @@ const printSummary = (
     summaryFramedLines.push(createFramedLine("└─────┘", scoreColorizer("└─────┘")));
     summaryFramedLines.push(
       createFramedLine(
-        "React Doctor (www.react.doctor)",
-        `React Doctor ${highlighter.dim("(www.react.doctor)")}`,
+        "Code Doctor (github.com/rrb115/code-doctor)",
+        `Code Doctor ${highlighter.dim("(github.com/rrb115/code-doctor)")}`,
       ),
     );
     summaryFramedLines.push(createFramedLine(""));
@@ -318,8 +317,8 @@ const printSummary = (
   } else {
     summaryFramedLines.push(
       createFramedLine(
-        "React Doctor (www.react.doctor)",
-        `React Doctor ${highlighter.dim("(www.react.doctor)")}`,
+        "Code Doctor (github.com/rrb115/code-doctor)",
+        `Code Doctor ${highlighter.dim("(github.com/rrb115/code-doctor)")}`,
       ),
     );
     summaryFramedLines.push(createFramedLine(""));
@@ -349,12 +348,10 @@ export const scan = async (directory: string, options: ScanOptions): Promise<voi
   const startTime = performance.now();
   const projectInfo = discoverProject(directory);
 
-  if (!projectInfo.reactVersion) {
-    throw new Error("No React dependency found in package.json");
-  }
-
   if (!options.scoreOnly) {
-    const frameworkLabel = formatFrameworkName(projectInfo.framework);
+    const frameworkLabel = projectInfo.framework !== "unknown"
+      ? formatFrameworkName(projectInfo.framework)
+      : "Generic JavaScript/TypeScript";
     const languageLabel = projectInfo.hasTypeScript ? "TypeScript" : "JavaScript";
 
     const completeStep = (message: string) => {
@@ -362,13 +359,7 @@ export const scan = async (directory: string, options: ScanOptions): Promise<voi
     };
 
     completeStep(`Detecting framework. Found ${highlighter.info(frameworkLabel)}.`);
-    completeStep(
-      `Detecting React version. Found ${highlighter.info(`React ${projectInfo.reactVersion}`)}.`,
-    );
     completeStep(`Detecting language. Found ${highlighter.info(languageLabel)}.`);
-    completeStep(
-      `Detecting React Compiler. ${projectInfo.hasReactCompiler ? highlighter.info("Found React Compiler.") : "Not found."}`,
-    );
     completeStep(`Found ${highlighter.info(`${projectInfo.sourceFileCount}`)} source files.`);
 
     logger.break();
@@ -376,46 +367,43 @@ export const scan = async (directory: string, options: ScanOptions): Promise<voi
 
   const lintPromise = options.lint
     ? (async () => {
-        const lintSpinner = options.scoreOnly ? null : spinner("Running lint checks...").start();
-        try {
-          const lintDiagnostics = await runOxlint(
-            directory,
-            projectInfo.hasTypeScript,
-            projectInfo.framework,
-            projectInfo.hasReactCompiler,
-          );
-          lintSpinner?.succeed("Running lint checks.");
-          return lintDiagnostics;
-        } catch (error) {
-          lintSpinner?.fail("Lint checks failed (non-fatal, skipping).");
-          logger.error(String(error));
-          return [];
-        }
-      })()
+      const lintSpinner = options.scoreOnly ? null : spinner("Running lint checks...").start();
+      try {
+        const lintDiagnostics = await runOxlint(
+          directory,
+          projectInfo.hasTypeScript,
+        );
+        lintSpinner?.succeed("Running lint checks.");
+        return lintDiagnostics;
+      } catch (error) {
+        lintSpinner?.fail("Lint checks failed (non-fatal, skipping).");
+        logger.error(String(error));
+        return [];
+      }
+    })()
     : Promise.resolve<Diagnostic[]>([]);
 
   const deadCodePromise = options.deadCode
     ? (async () => {
-        const deadCodeSpinner = options.scoreOnly
-          ? null
-          : spinner("Detecting dead code...").start();
-        try {
-          const knipDiagnostics = await runKnip(directory);
-          deadCodeSpinner?.succeed("Detecting dead code.");
-          return knipDiagnostics;
-        } catch (error) {
-          deadCodeSpinner?.fail("Dead code detection failed (non-fatal, skipping).");
-          logger.error(String(error));
-          return [];
-        }
-      })()
+      const deadCodeSpinner = options.scoreOnly
+        ? null
+        : spinner("Detecting dead code...").start();
+      try {
+        const knipDiagnostics = await runKnip(directory);
+        deadCodeSpinner?.succeed("Detecting dead code.");
+        return knipDiagnostics;
+      } catch (error) {
+        deadCodeSpinner?.fail("Dead code detection failed (non-fatal, skipping).");
+        logger.error(String(error));
+        return [];
+      }
+    })()
     : Promise.resolve<Diagnostic[]>([]);
 
   const [lintDiagnostics, deadCodeDiagnostics] = await Promise.all([lintPromise, deadCodePromise]);
   const diagnostics = [
     ...lintDiagnostics,
     ...deadCodeDiagnostics,
-    ...checkReducedMotion(directory),
   ];
 
   const elapsedMilliseconds = performance.now() - startTime;

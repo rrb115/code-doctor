@@ -1,135 +1,166 @@
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="./assets/react-doctor-readme-logo-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="./assets/react-doctor-readme-logo-light.svg">
-  <img alt="React Doctor" src="./assets/react-doctor-readme-logo-light.svg" width="180" height="40">
-</picture>
+# code-doctor
 
-[![version](https://img.shields.io/npm/v/react-doctor?style=flat&colorA=000000&colorB=000000)](https://npmjs.com/package/react-doctor)
-[![downloads](https://img.shields.io/npm/dt/react-doctor.svg?style=flat&colorA=000000&colorB=000000)](https://npmjs.com/package/react-doctor)
+> Detect and eliminate unnecessary LLM calls in any JavaScript/TypeScript codebase — replace them with deterministic local logic to cut latency and cost.
 
-Let coding agents diagnose and fix your React code.
+Forked from [react-doctor](https://github.com/millionco/react-doctor) and repurposed as a focused LLM optimization tool.
 
-One command scans your codebase for security, performance, correctness, and architecture issues, then outputs a **0–100 score** with actionable diagnostics.
+---
 
-### [See it in action →](https://react.doctor)
+## Why code-doctor?
 
-https://github.com/user-attachments/assets/07cc88d9-9589-44c3-aa73-5d603cb1c570
+Every LLM call adds 200–2000 ms of network latency and real API cost. Many of those calls don't need to be LLM calls at all — they're asking a model to do something a few lines of deterministic code could do instantly.
 
-## Install
+`code-doctor` scans your codebase and flags these patterns so you can replace them.
 
-Run this at your project root:
+---
 
-```bash
-npx -y react-doctor@latest .
-```
+## Installation
 
-Use `--verbose` to see affected files and line numbers:
+Run directly with npx (no install required):
 
 ```bash
-npx -y react-doctor@latest . --verbose
+npx -y code-doctor@latest .
 ```
 
-## Install as a skill
-
-Add React Doctor's rules as a [skill](https://skills.sh) for your coding agent:
+Or install globally:
 
 ```bash
-npx skills add millionco/react-doctor
+npm install -g code-doctor
+code-doctor .
 ```
 
-This gives agents like Cursor, Claude Code, Copilot, and others access to all 47+ React best practice rules. The CLI will also prompt to install the skill on first run.
+---
 
-## Options
+## What it detects
+
+### LLM Cost & Latency
+
+| Rule | Severity | What it flags |
+|------|----------|---------------|
+| `llm-static-prompt-call` | error | LLM calls with a fully static prompt — replace with a constant or deterministic helper |
+| `llm-deterministic-task` | warning | Prompts requesting deterministic operations (normalize, parse, validate, classify yes/no) |
+| `llm-loop-call` | warning | Per-item LLM calls inside loops/maps — batch or replace with local logic |
+| `llm-sequential-call` | warning | Consecutive awaited LLM calls that can be parallelized or collapsed |
+
+### Performance
+
+| Rule | Severity | What it flags |
+|------|----------|---------------|
+| `async-parallel` | warning | Sequential `await` calls that can run with `Promise.all` |
+| `js-combine-iterations` | warning | Multiple `.map()/.filter()` chains that can be merged |
+| `js-hoist-regexp` | warning | RegExp literals inside loops that get re-compiled on every iteration |
+| `js-min-max-loop` | warning | Manual min/max loops replaceable with `Math.min/max` |
+| `js-set-map-lookups` | warning | Repeated `Array.includes/find` that should use a `Set` or `Map` |
+| `js-index-maps` | warning | Repeated `.find()` calls that should use an index `Map` |
+| `js-early-exit` | warning | Functions with a large if-block that should return early |
+| `js-tosorted-immutable` | warning | `.slice().sort()` replaceable with `.toSorted()` |
+
+### Security
+
+| Rule | Severity | What it flags |
+|------|----------|---------------|
+| `no-secrets-in-client-code` | error | API keys / tokens hardcoded in client-side code |
+| `no-eval` | error | `eval()` usage |
+
+---
+
+## CLI options
 
 ```
-Usage: react-doctor [directory] [options]
+Usage: code-doctor [options] [directory]
+
+Arguments:
+  directory              project directory to scan (default: ".")
 
 Options:
-  -v, --version     display the version number
-  --no-lint         skip linting
-  --no-dead-code    skip dead code detection
-  --verbose         show file details per rule
-  --score           output only the score
-  -y, --yes         skip prompts, scan all workspace projects
-  --project <name>  select workspace project (comma-separated for multiple)
-  --fix             open Ami to auto-fix all issues
-  --prompt          copy latest scan output to clipboard
-  -h, --help        display help for command
+  --no-lint              skip linting
+  --no-dead-code         skip dead code detection
+  --score-only           print score only (machine-readable)
+  -v, --version          display the version number
+  -h, --help             display help
 ```
+
+---
 
 ## Node.js API
 
-You can also use React Doctor programmatically:
+```typescript
+import { diagnose } from "code-doctor/api";
 
-```js
-import { diagnose } from "react-doctor/api";
-
-const result = await diagnose("./path/to/your/react-project");
-
-console.log(result.score); // { score: 82, label: "Good" } or null
-console.log(result.diagnostics); // Array of Diagnostic objects
-console.log(result.project); // Detected framework, React version, etc.
-```
-
-The `diagnose` function accepts an optional second argument:
-
-```js
-const result = await diagnose(".", {
-  lint: true, // run lint checks (default: true)
-  deadCode: true, // run dead code detection (default: true)
+const result = await diagnose("./my-project", {
+  lint: true,
+  deadCode: false,
 });
+
+console.log(result.diagnostics);
+console.log(result.score);
 ```
 
-Each diagnostic has the following shape:
+---
 
-```ts
-interface Diagnostic {
-  filePath: string;
-  plugin: string;
-  rule: string;
-  severity: "error" | "warning";
-  message: string;
-  help: string;
-  line: number;
-  column: number;
-  category: string;
+## ESLint / Oxlint plugin
+
+The rules are also available as a standalone plugin for use in your own Oxlint config:
+
+```json
+{
+  "jsPlugins": ["./node_modules/code-doctor/dist/code-doctor-plugin.js"],
+  "rules": {
+    "code-doctor/llm-static-prompt-call": "error",
+    "code-doctor/llm-deterministic-task": "warn",
+    "code-doctor/llm-loop-call": "warn",
+    "code-doctor/llm-sequential-call": "warn"
+  }
 }
 ```
 
-## [Scores for popular open-source projects](https://react.doctor/leaderboard)
+---
 
-| Project                                                | Score  | Share                                                                                   |
-| ------------------------------------------------------ | ------ | --------------------------------------------------------------------------------------- |
-| [tldraw](https://github.com/tldraw/tldraw)             | **84** | [view](https://www.react.doctor/share?p=tldraw&s=84&e=98&w=139&f=40)                    |
-| [excalidraw](https://github.com/excalidraw/excalidraw) | **84** | [view](https://www.react.doctor/share?p=%40excalidraw%2Fexcalidraw&s=84&e=2&w=196&f=80) |
-| [twenty](https://github.com/twentyhq/twenty)           | **78** | [view](https://www.react.doctor/share?p=twenty-front&s=78&e=99&w=293&f=268)             |
-| [plane](https://github.com/makeplane/plane)            | **78** | [view](https://www.react.doctor/share?p=web&s=78&e=7&w=525&f=292)                       |
-| [formbricks](https://github.com/formbricks/formbricks) | **75** | [view](https://www.react.doctor/share?p=%40formbricks%2Fweb&s=75&e=15&w=389&f=242)      |
-| [posthog](https://github.com/PostHog/posthog)          | **72** | [view](https://www.react.doctor/share?p=%40posthog%2Ffrontend&s=72&e=82&w=1177&f=585)   |
-| [supabase](https://github.com/supabase/supabase)       | **69** | [view](https://www.react.doctor/share?p=studio&s=69&e=74&w=1087&f=566)                  |
-| [onlook](https://github.com/onlook-dev/onlook)         | **69** | [view](https://www.react.doctor/share?p=%40onlook%2Fweb-client&s=69&e=64&w=418&f=178)   |
-| [payload](https://github.com/payloadcms/payload)       | **68** | [view](https://www.react.doctor/share?p=%40payloadcms%2Fui&s=68&e=139&w=408&f=298)      |
-| [sentry](https://github.com/getsentry/sentry)          | **64** | [view](https://www.react.doctor/share?p=sentry&s=64&e=94&w=1345&f=818)                  |
-| [cal.com](https://github.com/calcom/cal.com)           | **63** | [view](https://www.react.doctor/share?p=%40calcom%2Fweb&s=63&e=31&w=558&f=311)          |
-| [dub](https://github.com/dubinc/dub)                   | **62** | [view](https://www.react.doctor/share?p=web&s=62&e=52&w=966&f=457)                      |
+## Example: what gets flagged
 
-## Contributing
+```typescript
+// ❌ llm-static-prompt-call — prompt is fully static, no LLM needed
+const result = await openai.chat.completions.create({
+  messages: [{ role: "user", content: "What is the capital of France?" }],
+});
 
-Want to contribute? Check out the codebase and submit a PR.
-
-```bash
-git clone https://github.com/millionco/react-doctor
-cd react-doctor
-pnpm install
-pnpm -r run build
+// ✅ Replace with a constant
+const result = "Paris";
 ```
 
-Run locally:
+```typescript
+// ❌ llm-deterministic-task — normalizing a string doesn't need a model
+const slug = await llm.generate({ prompt: `Convert "${title}" to a URL slug` });
 
-```bash
-node packages/react-doctor/dist/cli.js /path/to/your/react-project
+// ✅ Replace with deterministic logic
+const slug = title.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
 ```
 
-### License
+```typescript
+// ❌ llm-loop-call — one model call per item
+const results = await Promise.all(items.map(item =>
+  openai.chat.completions.create({ messages: [{ role: "user", content: item }] })
+));
 
-React Doctor is MIT-licensed open-source software.
+// ✅ Pre-filter deterministically, then batch the remaining items
+const needsModel = items.filter(item => !isSimpleCase(item));
+const results = await openai.chat.completions.create({ messages: needsModel.map(...) });
+```
+
+```typescript
+// ❌ llm-sequential-call — two independent calls run one after the other
+const summary = await llm.generate({ prompt: "Summarize: " + doc });
+const tags = await llm.generate({ prompt: "Tag: " + doc });
+
+// ✅ Parallelize
+const [summary, tags] = await Promise.all([
+  llm.generate({ prompt: "Summarize: " + doc }),
+  llm.generate({ prompt: "Tag: " + doc }),
+]);
+```
+
+---
+
+## Origin
+
+This project is a fork of [react-doctor](https://github.com/millionco/react-doctor) by the Million.js team. The React-specific rules have been removed and replaced with a focused set of LLM optimization rules that work on any JS/TS codebase.
